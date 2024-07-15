@@ -36,6 +36,7 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+const usersCollection = client.db("Pay-Ease").collection("Users");
 async function dbConnect() {
     try {
         // await client.db('admin').command({ ping: 1 })
