@@ -39,7 +39,7 @@ const client = new MongoClient(uri, {
 const usersCollection = client.db("Pay-Ease").collection("Users");
 async function dbConnect() {
     try {
-        // await client.db('admin').command({ ping: 1 })
+        await client.db('admin').command({ ping: 1 })
         console.log('You successfully connected to MongoDB!')
     } catch (err) {
         console.log(err)
@@ -50,6 +50,44 @@ dbConnect()
 app.get('/', (req, res) => {
     res.send('Pay with ease with Pay-Ease!');
 });
+app.post('/users', async (req, res) => {
+    const { name, pin, mobile, email } = req.body;
+
+    // Validate input
+    if (!name || !pin || !mobile || !email) {
+        return res.status(400).json({ message: 'All fields are required.' });
+    }
+    
+    // Hash the PIN
+    const hashedPin = await bcrypt.hash(pin, saltRounds);
+
+    try {
+        // Connect to MongoDB
+      
+
+        // Create a new user object
+        const newUser = {
+            name,
+            pin: hashedPin,
+            mobile,
+            email,
+            status: 'pending',
+            balance: 0 ,
+        };
+
+        // Insert the new user into the database
+        const result = await usersCollection.insertOne(newUser);
+        
+        // Respond with the created user data (omit the PIN for security)
+        const { pin: _, ...userWithoutPin } = newUser;
+        res.status(201).json({ message: 'User registered successfully!', user: userWithoutPin });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    } 
+});
+
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
 });
