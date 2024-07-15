@@ -45,16 +45,49 @@ async function dbConnect() {
         console.log(err)
     }
 }
-dbConnect()
+dbConnect();
+const verifyToken = (req, res, next) => {
+    if (!req?.headers?.authorization) {
+        return res.status(401).send({ message: 'Unauthorized Access' });
+    }
+    const token = req.headers.authorization.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+            return res.status(401).send({ message: 'Unauthorized Access' });
+        }
+        req.decoded = decoded
+        next();
+    })
+
+}
+app.post('/jwt', async (req, res) => {
+    const user = req.body;
+    const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '1d'
+    })
+    res.send({ token });
+
+})
+
+const verifyAdmin = async (req, res, next) => {
+    const email = req.decoded.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    const isAdmin = user?.role === 'admin';
+    if (!isAdmin) {
+        return res.status(403).send({ message: 'Forbidden Access' });
+    }
+    next();
+}
 
 app.get('/', (req, res) => {
     res.send('Pay with ease with Pay-Ease!');
 });
-app.post('/users', async (req, res) => {
-    const { name, pin, mobile, email } = req.body;
+app.post('/auth/register', async (req, res) => {
+    const { name, pin, phone, email,userType  } = req.body;
 
     // Validate input
-    if (!name || !pin || !mobile || !email) {
+    if (!name || !pin || !phone || !email|| !userType) {
         return res.status(400).json({ message: 'All fields are required.' });
     }
     
@@ -62,15 +95,14 @@ app.post('/users', async (req, res) => {
     const hashedPin = await bcrypt.hash(pin, saltRounds);
 
     try {
-        // Connect to MongoDB
-      
-
+    
         // Create a new user object
         const newUser = {
             name,
             pin: hashedPin,
-            mobile,
+            mobile: phone,
             email,
+            AppliedAs: userType ,
             status: 'pending',
             balance: 0 ,
         };
@@ -84,9 +116,17 @@ app.post('/users', async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        console.log('Error: ', error);
         res.status(500).json({ message: 'Internal server error' });
     } 
 });
+app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+    const users = await usersCollection.find().toArray();
+    res.send(users);
+}
+);
+
+
 
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
