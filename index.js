@@ -175,7 +175,26 @@ app.patch('/users/agent/reject/:email', verifyToken, async (req, res) => {
     res.send(result.value);
 }
 );
-
+app.post('/auth/login', async (req, res) => {
+    const { email, pin } = req.body;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    const isMatch = await bcrypt.compare(pin, user.pin);
+    if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ email: user.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1y' });
+    res.send({ token });
+});
+app.get('/auth/me', verifyToken, async (req, res) => {
+    const email = req.decoded.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    res.send({ user });
+});
 
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
