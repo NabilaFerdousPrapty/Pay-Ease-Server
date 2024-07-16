@@ -125,7 +125,56 @@ app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
     res.send(users);
 }
 );
-
+app.get('/users/agent/:email', verifyToken,  async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    res.send(user);
+}
+);
+app.get('user/admin/:email', verifyToken, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    res.send(user);
+}
+);
+app.patch('/users/approve/:email', verifyToken, verifyAdmin, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, status: 'pending',AppliedAs:'User' };
+    const update = { status: 'approved' ,};
+    const options = { returnDocument: 'after',balance: 40};
+    const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
+    res.send(result.value);
+}
+);
+app.patch('/users/reject/:email', verifyToken, verifyAdmin, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, status: 'pending' ,AppliedAs:'User'};
+    const update = { status: 'rejected' };
+    const options = { returnDocument: 'after' };
+    const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
+    res.send(result.value);
+}
+);
+app.patch('/users/agent/approve/:email', verifyToken, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, status: 'pending',AppliedAs:'Agent' };
+    const update = { status: 'approved',balance: 10000};
+    const options = { returnDocument: 'after' };
+    const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
+    res.send(result.value);
+}   
+);
+app.patch('/users/agent/reject/:email', verifyToken, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, status: 'pending',AppliedAs:'Agent' };
+    const update = { status: 'rejected' };
+    const options = { returnDocument: 'after' };
+    const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
+    res.send(result.value);
+}
+);
 
 
 app.listen(port, () => {
