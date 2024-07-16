@@ -16,6 +16,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors(
     {
         origin: ["http://localhost:5173",
+           
             
         ],
         credentials: true,
@@ -73,7 +74,7 @@ const verifyAdmin = async (req, res, next) => {
     const email = req.decoded.email;
     const query = { email: email };
     const user = await usersCollection.findOne(query);
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.AppliedAs=== 'Admin';
     if (!isAdmin) {
         return res.status(403).send({ message: 'Forbidden Access' });
     }
@@ -84,42 +85,47 @@ app.get('/', (req, res) => {
     res.send('Pay with ease with Pay-Ease!');
 });
 app.post('/auth/register', async (req, res) => {
-    const { name, pin, phone, email,userType  } = req.body;
+    const { name, pin, phone, email, userType } = req.body;
 
     // Validate input
-    if (!name || !pin || !phone || !email|| !userType) {
+    if (!name || !pin || !phone || !email || !userType) {
         return res.status(400).json({ message: 'All fields are required.' });
     }
-    
-    // Hash the PIN
-    const hashedPin = await bcrypt.hash(pin, saltRounds);
 
     try {
-    
+        // Check if a user with the same email already exists
+        const existingUser = await usersCollection.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User with this email already exists.' });
+        }
+
+        // Hash the PIN
+        const hashedPin = await bcrypt.hash(pin, saltRounds);
+
         // Create a new user object
         const newUser = {
             name,
             pin: hashedPin,
             mobile: phone,
             email,
-            AppliedAs: userType ,
+            AppliedAs: userType,
             status: 'pending',
-            balance: 0 ,
+            balance: 0,
         };
 
         // Insert the new user into the database
         const result = await usersCollection.insertOne(newUser);
-        
+
         // Respond with the created user data (omit the PIN for security)
         const { pin: _, ...userWithoutPin } = newUser;
         res.status(201).json({ message: 'User registered successfully!', user: userWithoutPin });
 
     } catch (error) {
         console.error(error);
-        console.log('Error: ', error);
         res.status(500).json({ message: 'Internal server error' });
-    } 
+    }
 });
+
 app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
     const users = await usersCollection.find().toArray();
     res.send(users);
@@ -141,7 +147,7 @@ app.get('user/admin/:email', verifyToken, async (req, res) => {
 );
 app.patch('/users/approve/:email', verifyToken, verifyAdmin, async (req, res) => {
     const email = req.params.email;
-    const query = { email: email, status: 'pending',AppliedAs:'User' };
+    const query = { email: email};
     const update = { status: 'approved' ,};
     const options = { returnDocument: 'after',balance: 40};
     const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
@@ -150,8 +156,8 @@ app.patch('/users/approve/:email', verifyToken, verifyAdmin, async (req, res) =>
 );
 app.patch('/users/reject/:email', verifyToken, verifyAdmin, async (req, res) => {
     const email = req.params.email;
-    const query = { email: email, status: 'pending' ,AppliedAs:'User'};
-    const update = { status: 'rejected' };
+    const query = { email: email};
+    const update = { status: 'rejected' ,balance: 0};
     const options = { returnDocument: 'after' };
     const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
     res.send(result.value);
@@ -159,8 +165,8 @@ app.patch('/users/reject/:email', verifyToken, verifyAdmin, async (req, res) => 
 );
 app.patch('/users/agent/approve/:email', verifyToken, async (req, res) => {
     const email = req.params.email;
-    const query = { email: email, status: 'pending',AppliedAs:'Agent' };
-    const update = { status: 'approved',balance: 10000};
+    const query = { email: email  };
+    const update = { status: 'authorized',balance: 10000};
     const options = { returnDocument: 'after' };
     const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
     res.send(result.value);
@@ -168,8 +174,8 @@ app.patch('/users/agent/approve/:email', verifyToken, async (req, res) => {
 );
 app.patch('/users/agent/reject/:email', verifyToken, async (req, res) => {
     const email = req.params.email;
-    const query = { email: email, status: 'pending',AppliedAs:'Agent' };
-    const update = { status: 'rejected' };
+    const query = { email: email, };
+    const update = { status: 'rejected' ,balance: 0};
     const options = { returnDocument: 'after' };
     const result = await usersCollection.findOneAndUpdate(query, { $set: update }, options);
     res.send(result.value);
