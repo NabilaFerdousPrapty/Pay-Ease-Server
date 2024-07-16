@@ -131,16 +131,16 @@ app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
     res.send(users);
 }
 );
-app.get('/users/agent/:email', verifyToken,  async (req, res) => {
+app.get('/users/agent/:email',   async (req, res) => {
     const email = req.params.email;
-    const query = { email: email };
+    const query = { email: email, AppliedAs: 'Agent' ,status:'authorized'};
     const user = await usersCollection.findOne(query);
     res.send(user);
 }
 );
-app.get('user/admin/:email', verifyToken, async (req, res) => {
+app.get('/users/admin/:email', async (req, res) => {
     const email = req.params.email;
-    const query = { email: email };
+    const query = { email: email, AppliedAs: 'Admin' };
     const user = await usersCollection.findOne(query);
     res.send(user);
 }
