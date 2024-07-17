@@ -145,7 +145,14 @@ app.get('/users/admin/:email', async (req, res) => {
     res.send(user);
 }
 );
-app.patch('/users/approve/:email', verifyToken, verifyAdmin, async (req, res) => {
+app.get('/user/approved/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, status: 'approved' };
+    const user = await usersCollection.findOne(query);
+    res.send(user);
+}
+);
+app.patch('/users/approve/:email', verifyToken,verifyAdmin, async (req, res) => {
     const email = req.params.email;
     const query = { email: email};
     const update = { status: 'approved' ,};
