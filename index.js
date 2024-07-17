@@ -16,6 +16,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors(
     {
         origin: ["http://localhost:5173",
+            'https://pay-ease-client.vercel.app'
            
             
         ],
@@ -131,6 +132,13 @@ app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
     res.send(users);
 }
 );
+app.get('user/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    res.send(user);
+}
+);
 app.get('/users/agent/:email',   async (req, res) => {
     const email = req.params.email;
     const query = { email: email, AppliedAs: 'Agent' ,status:'authorized'};
@@ -147,7 +155,7 @@ app.get('/users/admin/:email', async (req, res) => {
 );
 app.get('/user/approved/:email', async (req, res) => {
     const email = req.params.email;
-    const query = { email: email, status: 'approved' };
+    const query = { email: email, status: 'approved' ,AppliedAs: 'User'};
     const user = await usersCollection.findOne(query);
     res.send(user);
 }
