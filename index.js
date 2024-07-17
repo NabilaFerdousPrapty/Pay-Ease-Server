@@ -196,6 +196,13 @@ app.patch('/users/agent/reject/:email', verifyToken, async (req, res) => {
     res.send(result.value);
 }
 );
+app.get('/cashIn/agent/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, AppliedAs: 'Agent' };
+    const agent = await usersCollection.findOne(query);
+    res.send([agent]);
+}
+);
 app.post('/auth/login', async (req, res) => {
     const { email, pin } = req.body;
     const query = { email: email };
