@@ -203,6 +203,13 @@ app.get('/cashIn/agent/:email', async (req, res) => {
     res.send([agent]);
 }
 );
+app.get('/cashOut/agent/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, AppliedAs: 'Agent' };
+    const agent = await usersCollection.findOne(query);
+    res.send([agent]);
+}
+);
 app.post('/auth/login', async (req, res) => {
     const { email, pin } = req.body;
     const query = { email: email };
