@@ -207,7 +207,14 @@ app.get('/cashOut/agent/:email', async (req, res) => {
     const email = req.params.email;
     const query = { email: email, AppliedAs: 'Agent' };
     const agent = await usersCollection.findOne(query);
-    res.send([agent]);
+    res.send(agent);
+}
+);
+app.post('sendMoney/agent/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email, AppliedAs: 'Agent' };
+    const agent = await usersCollection.findOne(query);
+    res.send(agent);
 }
 );
 app.post('/auth/login', async (req, res) => {
